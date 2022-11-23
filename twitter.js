@@ -1,5 +1,5 @@
-// This code only works when the first thing you type is a from: (or whatever you have the fromToken set to) this limit is explained better on the comment on lines 41-43
-// To run, paste into your browser's console when on twitter.com
+// This code only works when the first thing you type is a from:
+// this limit is explained better on the comment on lines 41-43
 
 var fromToken = 'from:'; // feel free to change this to other things
 
@@ -44,16 +44,45 @@ function handleInputForFromToken(e) {
     if(fromIdx == 0) {
         let containerDiv = document.createElement("div");
         containerDiv.id = "from-token-container"
-        containerDiv.style = "display: flex; height: max-content; overflow: hidden; height: 100%; width: 60px;"
+        containerDiv.style = "display: flex; height: max-content; overflow: hidden; height: 100%; white-space: nowrap; width: max-content; overflow: visible;"
         
         
         let fromTokenizedDiv = document.createElement("div");
         fromTokenizedDiv.innerHTML = fromToken;
-        fromTokenizedDiv.style = "align-self: center; background-color: #1DA1F2; border-radius: 10px; padding: 3px; height: 20px; display: flex;"
+        fromTokenizedDiv.style = "align-self: center; background-color: rgb(29, 161, 242); border-radius: 10px; padding: 3px; height: 20px; display: flex;width: max-content;"
 
         containerDiv.appendChild(fromTokenizedDiv)
         e.target.parentElement.prepend(containerDiv);
         e.target.value = searchText.replace(fromToken, "")
+
+
+        var target = document.querySelector('[id^="typeaheadDropdown-"]');
+
+        var observer = new MutationObserver(function(mutations) {
+            mutations.forEach(function(mutation) {
+                let children = document.querySelectorAll("[data-testid=typeaheadResult]");
+            
+                for(let i = 0; i < children.length; i++) {
+                    let child = children[i];
+                  
+                    let list_item = children[i].children[0].children[0];
+                    if(list_item == undefined || list_item.getAttribute("data-testid") != "TypeaheadUser") {
+                        console.log(child)
+                        child.children[0].remove();
+                    } else {
+                        let handle = list_item.children[0].children[1].children[0].children[0].children[0].children[1].children[0].children[0].children[0].children[0].innerHTML;
+                        
+                        list_item.removeAttribute("onclick");
+                        child.children[0].removeAttribute("onclick");
+                    
+                        
+                        list_item.onclick = (e) => handleSetUserFrom(e, handle);
+                        child.children[0].onclick = (e) => handleSetUserFrom(e, handle);
+                    }
+                }
+            });    
+        });
+        observer.observe(target, { childList: true });
 
         // the below hack is needed as some js on twitter modifies the input after
         // we clear it. This just clears it a bunch on a set time to stop that.
@@ -72,5 +101,21 @@ function handleInputForFromToken(e) {
     }
 }
 
-// code originally by Nicholas Orlowsky (https://github.com/nickorlow)
-// code authored on Wed Nov 23 @ 13:55 EST
+function handleSetUserFrom(e, handle) {
+    let tokenElem = document.getElementById("from-token-container");
+
+    tokenElem.children[0].innerHTML += " " + handle + " ";
+    
+    e.stopImmediatePropagation();
+
+    let input = document.querySelectorAll('[data-testid="SearchBox_Search_Input"]')[0];
+    input.value = "";
+    input.addEventListener("click", blankOutOnClick);
+    
+    observer.disconnect();
+}
+
+function blankOutOnClick(e) {
+    e.target.value = "";
+    e.target.removeEventListener("click", blankOutOnClick);
+}
